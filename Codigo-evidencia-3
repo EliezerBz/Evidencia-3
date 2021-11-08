@@ -1,0 +1,85 @@
+from collections import namedtuple
+import os
+import csv
+import sqlite3
+from sqlite3 import Error
+import sys
+
+Consolas = namedtuple("Consolas", "Folio, Fecha_de_la_venta, Descripcion, Cantidad_de_consolas, Precio")
+lista_Consolas = []
+
+while True:
+    print("")
+    print("*** VENTA DE CONSOLAS ***")
+    print("")
+    print("Buenos dias, usted esta entrando al registro de  venta de consolas")
+    print("**  Por favor indique la opcion que ocupe***")
+    print("Registrar una venta [1]")
+    print("Consulta de una venta [2]")
+    print("Convertir a csv [3]")
+    print("reportes de las ventas obtenidas [4]")
+    print("Salir del Menu [5]")
+    op = input('Que opcion desea escoger:')
+    print("")
+    
+    if op == '1':
+        Folio = (int(input("Introduce el folio: ")))
+        Fecha_de_la_venta = (input("Introduce la fecha de la venta que se realizo: "))
+        Descripcion = (input("Por favor describe de la consola que se vendio: "))
+        Cantidad_de_consolas = (int(input("Cuantas consolas fueron que se vendieron: ")))
+        Precio = (int(input("Cual fue el precio por consola: ")))
+        subtotal = Cantidad_de_consolas * Precio
+        print(f"El subtotal a pagar es {subtotal}")
+        IVA = (subtotal*0.16)
+        Total = (subtotal + IVA)
+        print(f"El monto final con IVA incluido es de {Total}")
+        ventas = Consolas(Folio,Fecha_de_la_venta,Descripcion,Cantidad_de_consolas, Precio)
+        lista_Consolas.append(ventas)
+        try:
+            with sqlite3.connect("Venta_consolas.db") as conn:
+                cur = conn.cursor()
+                cur.execute("CREATE TABLE IF NOT EXISTS consolas (Folio INTEGER PRIMARY KEY,  Fecha_de_la_venta TEXT NOT NULL, Descripcion TEXT NOT NULL, Cantidad_de_consolas TEXT NOT NULL, Precio REAL NOT NULL, IVA REAL NOT NULL, Total REAL NOT NULL);")
+                registros_ventas = {"Folio": Folio, "Fecha_de_la_venta": Fecha_de_la_venta, "Descripcion": Descripcion, "Cantidad_de_consolas": Cantidad_de_consolas, "Precio":Precio, "IVA": IVA, "Total": Total} 
+                cur.execute("INSERT INTO consolas VALUES(:Folio, :Fecha_de_la_venta, :Descripcion, :Cantidad_de_consolas, :Precio, :IVA, :Total)", registros_ventas)
+                registros_ventas1 = cur.fetchall()
+                print("Se registro a la base de datos")
+               
+        except Error as e:
+            print(e)
+        except:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        finally:
+            if conn:
+                conn.close()
+        
+    
+    elif op == '2':
+        Folio_busqueda = (int(input("Introduce el folio que quieres buscar: ")))
+        for elemento in lista_Consolas:
+            if elemento.Folio == Folio_busqueda:
+                print(f"Fecha de venta: {elemento. Fecha_de_la_venta}")
+                print(f"Descripcion: {elemento.Descripcion}")
+                print(f"Cantidad: {elemento.Cantidad_de_consolas}")
+                print(f"Precio: {elemento.Precio}")
+                break
+        else:
+            print("No existe ese  folio")
+            print("por favor ingrese el folio correcto")
+    elif op == '3':
+        input("desea guardar sus registros en un csv?:")
+        with open("Evidencia_estructura2.csv","w",newline="") as archivo:
+         grabador = csv.writer(archivo)
+         grabador.writerow(("Consolas", "Folio,Fecha_de_la_venta, Descripcion,Cantidad_de_consolas , Precio"))
+         grabador.writerows([(Consolas, elemento.Folio, elemento.Fecha_de_la_venta, elemento.Descripcion, elemento.Cantidad_de_consolas, elemento.Precio) for elemento in lista_Consolas])
+        print(f"se guardo exitosamente en {os.getcwd()}")
+    elif op == '4':
+         for elemento in lista_Consolas :
+            print(f"Fecha de venta: {elemento.Folio}")
+            print(f"Fecha de venta: {elemento.Fecha_de_la_venta}")
+            print(f"Descripcion: {elemento.Descripcion}")
+            print(f"Cantidad: {elemento.Cantidad_de_consolas}")
+            print(f"Precio: {elemento.Precio}")
+            print("******")
+    elif op == '5' :
+        print('Usted ha salido del menu')
+        break
